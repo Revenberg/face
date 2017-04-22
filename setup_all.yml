@@ -1,0 +1,124 @@
+---
+- name: http://www.knight-of-pi.org/opencv-primer-face-detection-with-the-raspberry-pi/
+  hosts: rpi
+  become_user: root
+  become: yes
+
+  tasks:    
+    - name: Update apt-get cache
+      apt: >
+        update_cache=yes
+        cache_valid_time=360
+    
+    - name: Update all packages to the latest version
+      apt: > 
+        upgrade=yes
+
+    - name: Install list of packages
+      action: apt pkg={{item}} state=installed
+      with_items:
+        - build-essential 
+        - git 
+        - cmake 
+        - pkg-config 
+        - libjpeg-dev 
+        - libtiff5-dev 
+        - libjasper-dev 
+        - libpng12-dev 
+        - libavcodec-dev 
+        - libavformat-dev 
+        - libswscale-dev 
+        - libv4l-dev 
+        - libxvidcore-dev 
+        - libx264-dev 
+        - libgtk2.0-dev 
+        - libatlas-base-dev 
+        - gfortran 
+        - python2.7-dev 
+        - python3-dev
+        - xserver-xorg
+        - xinit
+        - xserver-xorg-video-fbdev
+        - lxde
+        - lxde-common
+        - python3-picamera
+        - python-picamera
+
+    - name: download file opencv 3.0.0
+      get_url:
+        url: https://github.com/Itseez/opencv/archive/3.0.0.zip
+        dest: /home/pi/opencv.zip
+    - name: Unarchive opencv
+      unarchive:
+       src: /home/pi/opencv.zip
+       dest: /home/pi/
+       remote_src: True
+
+    - name: download file opencv_contrib.zip 
+      get_url:
+        url: https://github.com/Itseez/opencv_contrib/archive/3.0.0.zip
+        dest: /home/pi/opencv_contrib.zip 
+    - name: Unarchive opencv_contrib
+      unarchive:
+       src: /home/pi/opencv_contrib.zip
+       dest: /home/pi/
+       remote_src: True
+
+    - name: create dir /home/pi/opencv-3.0.0/build
+      file:
+        path: /home/pi/opencv-3.0.0/build
+        state: directory
+        mode: 0755
+    - name:  cmake
+      command: cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local -D INSTALL_C_EXAMPLES=ON -D INSTALL_PYTHON_EXAMPLES=ON -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib-3.0.0/modules -D BUILD_EXAMPLES=ON ..
+      args:
+        chdir: /home/pi/opencv-3.0.0/build
+    - name: make -j4
+      command: make -j4        
+      args:
+        chdir: /home/pi/opencv-3.0.0/build
+    - name: make clean
+      command: make clean
+      args:
+        chdir: /home/pi/opencv-3.0.0/build
+    - name: make
+      command: make
+      args:
+        chdir: /home/pi/opencv-3.0.0/build
+    - name: make install
+      command: make install
+      args:
+        chdir: /home/pi/opencv-3.0.0/build
+    - name: sudo ldconfig
+      command: sudo ldconfig
+      args:
+        chdir: /home/pi/opencv-3.0.0/build
+
+    - name: Nose25x15.1.zip
+      get_url: 
+        url: http://alereimondo.no-ip.org/OpenCV/uploads/34/Nose25x15.1.zip
+        dest: /home/pi/Nose25x15.1.zip
+    - name: Unarchive Nose25x15.1.zip
+      unarchive:
+       src: /home/pi/Nose25x15.1.zip
+       dest: /home/pi/
+       remote_src: True
+
+    - name: checking if the file Nariz.xml exists
+      stat:      
+       path: /home/pi/opencv-3.0.0/data/haarcascades Nariz.xml
+       register: stat_result
+    - name: moving file Nariz.xml
+     command: mv /home/pi/Nariz.xml /home/pi/opencv-3.0.0/data/haarcascades
+      when: stat_result.stat.exists == True
+
+    - name: opencv_face_features.py
+      get_url: 
+        url: https://raw.githubusercontent.com/JoBergs/RaspiContent/master/OpenCV_demo/opencv_face_features.py
+        dest: /home/pi/opencv_face_features.py
+    - name: poi_1.jpg
+      get_url:
+        url: https://raw.githubusercontent.com/JoBergs/RaspiContent/master/OpenCV_demo/poi_1.jpg
+        dest: /home/pi/poi_1.jpg
+    - name: python opencv_face_features.py poi_1.jpg
+      command: python opencv_face_features.py poi_1.jpg
